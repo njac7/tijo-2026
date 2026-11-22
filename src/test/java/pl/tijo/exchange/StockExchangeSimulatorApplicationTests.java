@@ -1,0 +1,13 @@
+package pl.tijo.exchange;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class StockExchangeSimulatorApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
