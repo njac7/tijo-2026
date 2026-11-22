@@ -1,37 +1,47 @@
 # Symulator giełdy z silnikiem dopasowywania zleceń
 
-Projekt zaliczeniowy z przedmiotu **Testowanie i Jakość Oprogramowania**.
+## Nazwa kursu
 
-Autor: Norbert Armatys (37664), grupa PT2
+Testowanie i Jakość Oprogramowania
+
+## Autor
+
+Norbert Armatys (37664), grupa PT2
+
+## Temat projektu
+
+Symulator giełdy z silnikiem dopasowywania zleceń kupna i sprzedaży.
 
 ## Opis projektu
 
 Aplikacja webowa, która symuluje działanie giełdy papierów wartościowych. Inwestorzy mają konta z gotówką
 i akcjami trzech fikcyjnych spółek (ALFA, BETA, GAMA). Składają zlecenia kupna i sprzedaży, a silnik
 dopasowywania paruje je ze zleceniami innych inwestorów i od razu rozlicza transakcje: przenosi akcje
-i gotówkę między kontami oraz aktualizuje ostatnią cenę spółki.
+i gotówkę między kontami oraz aktualizuje kurs spółki.
 
-Funkcje:
+### Ekrany
 
-- notowania spółek: ostatnia cena, najlepsza oferta kupna i sprzedaży,
-- arkusz zleceń spółki z poziomami cenowymi i spreadem,
-- składanie zleceń kupna i sprzedaży z limitem ceny albo po każdej cenie (PKC),
-- portfel inwestora: gotówka całkowita, zablokowana i wolna, akcje, wartość portfela,
-- lista aktywnych i zakończonych zleceń z możliwością anulowania aktywnych,
-- historia transakcji,
-- przełączanie inwestora w nagłówku strony, żeby jedna osoba mogła zagrać po obu stronach transakcji,
-- REST API z tymi samymi operacjami.
+- **Rynek** – karty spółek z kursem, zmianą procentową i wykresem, tabela notowań (kurs, zmiana,
+  kurs odniesienia, min, max, najlepsza oferta kupna i sprzedaży, wolumen) i przewijany pasek notowań.
+- **Spółka** – kurs ze statystykami, wykres ceny, arkusz zleceń z głębokością rynku, formularz zlecenia
+  i ostatnie transakcje. Kliknięcie ceny w arkuszu wpisuje ją do formularza. Formularz na bieżąco liczy
+  wartość zlecenia i ostrzega, gdy przekracza ona wolne środki albo liczbę wolnych akcji.
+- **Portfel** – wartość portfela, gotówka całkowita, wolna i zablokowana, posiadane akcje, aktywne
+  zlecenia z postępem wykonania i przyciskiem anulowania oraz zlecenia zakończone.
+- **Transakcje** – historia transakcji na całym rynku.
+
+Inwestora zmienia się w prawym górnym rogu, więc jedna osoba może zagrać po obu stronach transakcji.
 
 ### Reguły działania giełdy
 
 1. **Priorytet ceny i czasu.** Zlecenie kupna dopasowywane jest najpierw do najtańszej oferty sprzedaży,
-   zlecenie sprzedaży do najwyższej oferty kupna. Przy tej samej cenie pierwszeństwo ma zlecenie złożone wcześniej.
+   a zlecenie sprzedaży do najwyższej oferty kupna. Przy tej samej cenie pierwszeństwo ma zlecenie złożone wcześniej.
 2. **Cena transakcji** to cena zlecenia, które czekało w arkuszu.
 3. **Zlecenie z limitem** wykonuje się tylko po cenie nie gorszej niż limit. Niewykonana część czeka w arkuszu.
-4. **Zlecenie PKC** wykonuje się od razu po najlepszych dostępnych cenach. Niewykonana część jest anulowana
-   i nie trafia do arkusza.
+4. **Zlecenie PKC** (po każdej cenie) wykonuje się od razu po najlepszych dostępnych cenach. Niewykonana
+   część jest anulowana i nie trafia do arkusza.
 5. **Częściowe wykonanie.** Zlecenie może być realizowane w kilku transakcjach z różnymi zleceniami.
-6. **Blokada środków.** Kupno z limitem blokuje `ilość × limit` gotówki, sprzedaż blokuje akcje.
+6. **Blokada środków.** Kupno z limitem blokuje `ilość × limit` gotówki, a sprzedaż blokuje akcje.
    Jeśli transakcja zajdzie po cenie niższej niż limit, różnica wraca do wolnych środków.
 7. **Brak pokrycia.** Nie można kupić za więcej, niż wynoszą wolne środki, ani sprzedać akcji,
    których się nie ma albo które są już zablokowane w innym zleceniu.
@@ -44,21 +54,25 @@ Funkcje:
 ### Dane startowe
 
 Po uruchomieniu w bazie są 3 spółki, 4 inwestorów (Anna Kowalska, Jan Nowak, Piotr Wiśniewski,
-Maria Zielińska) z gotówką i akcjami oraz kilka zleceń w arkuszach, żeby od razu dało się handlować.
-Baza H2 działa w pamięci, więc każde uruchomienie zaczyna od tego samego stanu.
+Maria Zielińska) z gotówką i akcjami, historia kilkunastu transakcji oraz zlecenia w arkuszach.
+Baza H2 działa w pamięci, więc każde uruchomienie zaczyna od tego samego stanu. Dane startowe
+można wyłączyć właściwością `app.seed-data=false`.
 
-## Technologie
+### Struktura projektu
 
-- Java 21
-- Spring Boot 4.2 (Spring MVC, Spring Data JPA, Validation)
-- Thymeleaf (interfejs użytkownika)
-- H2 (baza danych w pamięci)
-- Maven (z dołączonym Maven Wrapperem)
-- JUnit 5
+```
+src/main/java/pl/tijo/exchange
+├── domain       encje: Company, Trader, Holding, Order, Trade
+├── engine       MatchingEngine – dopasowywanie zleceń (czysta logika, bez bazy)
+├── service      OrderService (składanie, rozliczanie, anulowanie), MarketService (odczyt), OrderValidator
+├── repository   repozytoria Spring Data JPA
+├── config       zegar aplikacji i dane startowe
+└── web          kontrolery stron Thymeleaf i REST API
+```
 
 ## Uruchomienie projektu
 
-Wymagana jest Java 21. Maven nie musi być zainstalowany, bo projekt zawiera wrapper.
+Wymagana jest Java 21. Maven nie musi być zainstalowany, bo projekt zawiera Maven Wrapper.
 
 Windows:
 
@@ -82,17 +96,21 @@ Aplikacja działa pod adresem [http://localhost:8080](http://localhost:8080).
 Konsola bazy danych H2: [http://localhost:8080/h2-console](http://localhost:8080/h2-console)
 (JDBC URL `jdbc:h2:mem:exchange`, użytkownik `sa`, bez hasła).
 
-## Uruchomienie testów
+## Testy
+
+Uruchomienie wszystkich testów:
 
 ```
 mvnw.cmd test
 ```
 
+Opis testów jednostkowych i integracyjnych z odnośnikami do plików zostanie dodany w etapie 2.
+
 ## Dokumentacja API
 
 | Metoda | Adres | Opis |
 |---|---|---|
-| GET | `/api/companies` | lista spółek z ostatnią ceną i najlepszymi ofertami |
+| GET | `/api/companies` | lista spółek z kursem, zmianą, najlepszymi ofertami i wolumenem |
 | GET | `/api/companies/{ticker}/orderbook` | arkusz zleceń spółki (poziomy kupna i sprzedaży) |
 | GET | `/api/companies/{ticker}/trades` | ostatnie transakcje spółki |
 | GET | `/api/trades` | historia wszystkich transakcji |
@@ -122,14 +140,15 @@ Pole `side` przyjmuje `BUY` albo `SELL`, pole `type` przyjmuje `LIMIT` albo `MAR
 `NEW`, `PARTIALLY_FILLED`, `FILLED` albo `CANCELLED`. Naruszenie reguły zwraca `400 Bad Request`
 z opisem w polu `detail`, a nieistniejąca spółka, inwestor lub zlecenie zwraca `404 Not Found`.
 
-## Struktura projektu
+## Przypadki testowe dla testera manualnego (TestCase)
 
-```
-src/main/java/pl/tijo/exchange
-├── domain       encje: Company, Trader, Holding, Order, Trade
-├── engine       MatchingEngine – dopasowywanie zleceń (czysta logika, bez bazy)
-├── service      OrderService (składanie, rozliczanie, anulowanie), MarketService (odczyt), walidacja
-├── repository   repozytoria Spring Data JPA
-├── config       zegar aplikacji i dane startowe
-└── web          kontrolery stron Thymeleaf i REST API
-```
+Przypadki testowe zostaną dodane w etapie 3.
+
+## Technologie użyte w projekcie
+
+- Java 21
+- Spring Boot 4.2 (Spring MVC, Spring Data JPA, Validation)
+- Thymeleaf (interfejs użytkownika)
+- H2 (baza danych w pamięci)
+- Maven (z dołączonym Maven Wrapperem)
+- JUnit 5
