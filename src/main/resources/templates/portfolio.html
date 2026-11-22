@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Mój portfel')}"></head>
+<body>
+<header th:replace="~{fragments :: header}"></header>
+<main th:with="p=${portfolio}">
+    <div th:replace="~{fragments :: flash}"></div>
+    <h1>Portfel: <span th:text="${p.trader.name}">Anna</span></h1>
+
+    <div class="stats">
+        <div><span>Gotówka</span><strong th:text="${@fmt.money(p.trader.cash)} + ' zł'"></strong></div>
+        <div><span>Zablokowana</span><strong th:text="${@fmt.money(p.trader.reservedCash)} + ' zł'"></strong></div>
+        <div><span>Wolna</span><strong th:text="${@fmt.money(p.trader.availableCash)} + ' zł'"></strong></div>
+        <div><span>Wartość akcji</span><strong th:text="${@fmt.money(p.sharesValue())} + ' zł'"></strong></div>
+        <div><span>Razem</span><strong th:text="${@fmt.money(p.totalValue())} + ' zł'"></strong></div>
+    </div>
+
+    <h2>Akcje</h2>
+    <table>
+        <thead><tr><th>Spółka</th><th class="num">Posiadane</th><th class="num">Zablokowane</th><th class="num">Wolne</th><th class="num">Ostatnia cena</th><th class="num">Wartość</th></tr></thead>
+        <tbody>
+        <tr th:each="h : ${p.holdings}">
+            <td><a th:href="@{/companies/{t}(t=${h.company.ticker})}" th:text="${h.company.ticker}"></a></td>
+            <td class="num" th:text="${h.quantity}"></td>
+            <td class="num" th:text="${h.reservedQuantity}"></td>
+            <td class="num" th:text="${h.availableQuantity}"></td>
+            <td class="num" th:text="${@fmt.money(h.company.lastPrice)}"></td>
+            <td class="num" th:text="${@fmt.money(h.company.lastPrice * h.quantity)}"></td>
+        </tr>
+        <tr th:if="${p.holdings.isEmpty()}"><td colspan="6" class="empty">brak akcji</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Aktywne zlecenia</h2>
+    <table>
+        <thead><tr><th>Nr</th><th>Spółka</th><th>Kierunek</th><th>Typ</th><th class="num">Limit</th><th class="num">Ilość</th><th class="num">Wykonano</th><th>Status</th><th>Złożone</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="o : ${p.activeOrders()}">
+            <td th:text="${o.id}"></td>
+            <td th:text="${o.company.ticker}"></td>
+            <td th:class="${o.buy} ? 'buy' : 'sell'" th:text="${o.side.label}"></td>
+            <td th:text="${o.type.label}"></td>
+            <td class="num" th:text="${@fmt.money(o.limitPrice)}"></td>
+            <td class="num" th:text="${o.quantity}"></td>
+            <td class="num" th:text="${o.filledQuantity}"></td>
+            <td th:text="${o.status.label}"></td>
+            <td th:text="${@fmt.time(o.createdAt)}"></td>
+            <td>
+                <form method="post" th:action="@{/orders/{id}/cancel(id=${o.id})}">
+                    <button type="submit" class="danger">Anuluj</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${p.activeOrders().isEmpty()}"><td colspan="10" class="empty">brak aktywnych zleceń</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Zakończone zlecenia</h2>
+    <table>
+        <thead><tr><th>Nr</th><th>Spółka</th><th>Kierunek</th><th>Typ</th><th class="num">Limit</th><th class="num">Ilość</th><th class="num">Wykonano</th><th>Status</th><th>Złożone</th></tr></thead>
+        <tbody>
+        <tr th:each="o : ${p.closedOrders()}">
+            <td th:text="${o.id}"></td>
+            <td th:text="${o.company.ticker}"></td>
+            <td th:class="${o.buy} ? 'buy' : 'sell'" th:text="${o.side.label}"></td>
+            <td th:text="${o.type.label}"></td>
+            <td class="num" th:text="${@fmt.money(o.limitPrice)}"></td>
+            <td class="num" th:text="${o.quantity}"></td>
+            <td class="num" th:text="${o.filledQuantity}"></td>
+            <td th:text="${o.status.label}"></td>
+            <td th:text="${@fmt.time(o.createdAt)}"></td>
+        </tr>
+        <tr th:if="${p.closedOrders().isEmpty()}"><td colspan="9" class="empty">brak zakończonych zleceń</td></tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

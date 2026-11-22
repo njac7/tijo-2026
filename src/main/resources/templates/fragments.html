@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | Symulator giełdy'">Symulator giełdy</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:fragment="header" class="topbar">
+    <a class="brand" th:href="@{/}">Symulator giełdy</a>
+    <nav>
+        <a th:href="@{/}">Notowania</a>
+        <a th:href="@{/portfolio}">Mój portfel</a>
+        <a th:href="@{/trades}">Historia transakcji</a>
+    </nav>
+    <form th:if="${traders != null and currentTrader != null}" class="trader-switch" method="post" th:action="@{/trader}">
+        <label for="traderId">Inwestor:</label>
+        <select id="traderId" name="traderId" onchange="this.form.submit()">
+            <option th:each="t : ${traders}" th:value="${t.id}" th:text="${t.name}"
+                    th:selected="${t.id == currentTrader.id}"></option>
+        </select>
+        <span class="cash" th:text="'wolne: ' + ${@fmt.money(currentTrader.availableCash)} + ' zł'"></span>
+        <noscript><button type="submit">Zmień</button></noscript>
+    </form>
+</header>
+
+<div th:fragment="flash">
+    <div th:if="${success}" class="alert success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert error" th:text="${error}"></div>
+</div>
+</body>
+</html>

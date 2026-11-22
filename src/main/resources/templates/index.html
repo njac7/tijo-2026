@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Notowania')}"></head>
+<body>
+<header th:replace="~{fragments :: header}"></header>
+<main>
+    <div th:replace="~{fragments :: flash}"></div>
+    <h1>Notowania</h1>
+    <table>
+        <thead>
+        <tr>
+            <th>Spółka</th>
+            <th>Nazwa</th>
+            <th class="num">Ostatnia cena</th>
+            <th class="num">Najlepsze kupno</th>
+            <th class="num">Najlepsza sprzedaż</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="c : ${companies}">
+            <td><strong th:text="${c.ticker}">ALFA</strong></td>
+            <td th:text="${c.name}">Alfa</td>
+            <td class="num" th:text="${@fmt.money(c.lastPrice)}">50,00</td>
+            <td class="num buy" th:text="${@fmt.money(c.bestBid)}">49,50</td>
+            <td class="num sell" th:text="${@fmt.money(c.bestAsk)}">51,00</td>
+            <td><a class="button" th:href="@{/companies/{t}(t=${c.ticker})}">Handluj</a></td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="hint">Inwestora zmienisz w prawym górnym rogu. Każdy inwestor ma własną gotówkę i akcje,
+        więc możesz złożyć zlecenie jako jedna osoba, a potem odpowiedzieć na nie jako druga.</p>
+</main>
+</body>
+</html>

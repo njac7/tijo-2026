@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(${company.ticker})}"></head>
+<body>
+<header th:replace="~{fragments :: header}"></header>
+<main>
+    <div th:replace="~{fragments :: flash}"></div>
+    <h1>
+        <span th:text="${company.ticker}">ALFA</span>
+        <small th:text="${company.name}">Alfa Energia</small>
+    </h1>
+    <p class="price">Ostatnia cena: <strong th:text="${@fmt.money(company.lastPrice)} + ' zł'">50,00 zł</strong>
+        <span th:if="${book.spread() != null}" class="hint"
+              th:text="'(spread ' + ${@fmt.money(book.spread())} + ' zł)'"></span>
+    </p>
+
+    <div class="columns">
+        <section>
+            <h2>Arkusz zleceń</h2>
+            <div class="book">
+                <table>
+                    <caption class="buy">Kupno</caption>
+                    <thead><tr><th class="num">Zleceń</th><th class="num">Ilość</th><th class="num">Cena</th></tr></thead>
+                    <tbody>
+                    <tr th:each="l : ${book.bids}">
+                        <td class="num" th:text="${l.orders}">1</td>
+                        <td class="num" th:text="${l.quantity}">100</td>
+                        <td class="num buy" th:text="${@fmt.money(l.price)}">49,50</td>
+                    </tr>
+                    <tr th:if="${book.bids.isEmpty()}"><td colspan="3" class="empty">brak zleceń kupna</td></tr>
+                    </tbody>
+                </table>
+                <table>
+                    <caption class="sell">Sprzedaż</caption>
+                    <thead><tr><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Zleceń</th></tr></thead>
+                    <tbody>
+                    <tr th:each="l : ${book.asks}">
+                        <td class="num sell" th:text="${@fmt.money(l.price)}">51,00</td>
+                        <td class="num" th:text="${l.quantity}">100</td>
+                        <td class="num" th:text="${l.orders}">1</td>
+                    </tr>
+                    <tr th:if="${book.asks.isEmpty()}"><td colspan="3" class="empty">brak zleceń sprzedaży</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Nowe zlecenie</h2>
+            <form method="post" th:action="@{/orders}" th:object="${orderForm}" id="order-form">
+                <input type="hidden" th:field="*{ticker}">
+                <fieldset class="radio">
+                    <legend>Kierunek</legend>
+                    <label th:each="s : ${sides}">
+                        <input type="radio" th:field="*{side}" th:value="${s}"> <span th:text="${s.label}"></span>
+                    </label>
+                </fieldset>
+                <fieldset class="radio">
+                    <legend>Typ</legend>
+                    <label th:each="t : ${types}">
+                        <input type="radio" th:field="*{type}" th:value="${t}"> <span th:text="${t.label}"></span>
+                    </label>
+                </fieldset>
+                <label>Liczba akcji
+                    <input type="number" th:field="*{quantity}" min="1" step="1" required>
+                </label>
+                <label id="price-field">Limit ceny (zł)
+                    <input type="number" th:field="*{limitPrice}" min="0.01" step="0.01">
+                </label>
+                <button type="submit">Złóż zlecenie</button>
+            </form>
+            <p class="hint">Kupno z limitem blokuje <em>ilość × limit</em> gotówki, sprzedaż blokuje akcje.
+                Zlecenie PKC wykonuje się od razu po najlepszych cenach, a niewykonana reszta jest anulowana.</p>
+        </section>
+    </div>
+
+    <section>
+        <h2>Ostatnie transakcje</h2>
+        <table>
+            <thead><tr><th>Czas</th><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Wartość</th><th>Kupujący</th><th>Sprzedający</th></tr></thead>
+            <tbody>
+            <tr th:each="t : ${trades}">
+                <td th:text="${@fmt.time(t.executedAt)}"></td>
+                <td class="num" th:text="${@fmt.money(t.price)}"></td>
+                <td class="num" th:text="${t.quantity}"></td>
+                <td class="num" th:text="${@fmt.money(t.value)}"></td>
+                <td th:text="${t.buyOrder.trader.name}"></td>
+                <td th:text="${t.sellOrder.trader.name}"></td>
+            </tr>
+            <tr th:if="${trades.isEmpty()}"><td colspan="6" class="empty">jeszcze nie było transakcji</td></tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+<script>
+    (function () {
+        const form = document.getElementById('order-form');
+        const priceField = document.getElementById('price-field');
+        const priceInput = priceField.querySelector('input');
+        function update() {
+            const market = form.querySelector('input[name="type"]:checked').value === 'MARKET';
+            priceField.hidden = market;
+            priceInput.required = !market;
+        }
+        form.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener('change', update));
+        update();
+    })();
+</script>
+</body>
+</html>
