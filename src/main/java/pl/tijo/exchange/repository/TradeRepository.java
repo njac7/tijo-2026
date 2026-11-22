@@ -11,4 +11,6 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     List<Trade> findTop20ByCompanyOrderByExecutedAtDescIdDesc(Company company);
 
     List<Trade> findTop100ByOrderByExecutedAtDescIdDesc();
+
+    List<Trade> findByCompanyOrderByExecutedAtAscIdAsc(Company company);
 }

@@ -48,12 +48,29 @@ public class MarketService {
 
     public List<CompanySummary> companySummaries() {
         return companies.findAllByOrderByTickerAsc().stream()
-                .map(company -> {
-                    OrderBook book = orderBook(company);
-                    return new CompanySummary(company.getTicker(), company.getName(), company.getLastPrice(),
-                            book.bestBid(), book.bestAsk());
-                })
+                .map(this::summary)
                 .toList();
+    }
+
+    public CompanySummary companySummary(String ticker) {
+        return summary(company(ticker));
+    }
+
+    public long availableShares(Long traderId, String ticker) {
+        return holdings.findByTraderAndCompany(trader(traderId), company(ticker))
+                .map(Holding::getAvailableQuantity)
+                .orElse(0L);
+    }
+
+    private CompanySummary summary(Company company) {
+        OrderBook book = orderBook(company);
+        List<Trade> history = trades.findByCompanyOrderByExecutedAtAscIdAsc(company);
+        List<BigDecimal> prices = new ArrayList<>();
+        prices.add(company.getReferencePrice());
+        history.forEach(trade -> prices.add(trade.getPrice()));
+        long volume = history.stream().mapToLong(Trade::getQuantity).sum();
+        return new CompanySummary(company.getTicker(), company.getName(), company.getReferencePrice(),
+                company.getLastPrice(), book.bestBid(), book.bestAsk(), volume, prices);
     }
 
     public Company company(String ticker) {

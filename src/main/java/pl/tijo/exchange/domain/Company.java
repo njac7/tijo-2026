@@ -21,16 +21,20 @@ public class Company {
     @Column(nullable = false)
     private String name;
 
-    @Column(precision = 19, scale = 2)
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal referencePrice;
+
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal lastPrice;
 
     protected Company() {
     }
 
-    public Company(String ticker, String name, BigDecimal lastPrice) {
+    public Company(String ticker, String name, BigDecimal referencePrice) {
         this.ticker = ticker;
         this.name = name;
-        this.lastPrice = lastPrice;
+        this.referencePrice = referencePrice;
+        this.lastPrice = referencePrice;
     }
 
     public Long getId() {
@@ -43,6 +47,10 @@ public class Company {
 
     public String getName() {
         return name;
+    }
+
+    public BigDecimal getReferencePrice() {
+        return referencePrice;
     }
 
     public BigDecimal getLastPrice() {
