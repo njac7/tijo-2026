@@ -1,35 +1,76 @@
 <!DOCTYPE html>
 <html lang="pl" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments :: head('Notowania')}"></head>
+<head th:replace="~{fragments :: head('Rynek')}"></head>
 <body>
-<header th:replace="~{fragments :: header}"></header>
+<th:block th:replace="~{fragments :: header('market')}"></th:block>
 <main>
     <div th:replace="~{fragments :: flash}"></div>
-    <h1>Notowania</h1>
-    <table>
-        <thead>
-        <tr>
-            <th>Spółka</th>
-            <th>Nazwa</th>
-            <th class="num">Ostatnia cena</th>
-            <th class="num">Najlepsze kupno</th>
-            <th class="num">Najlepsza sprzedaż</th>
-            <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="c : ${companies}">
-            <td><strong th:text="${c.ticker}">ALFA</strong></td>
-            <td th:text="${c.name}">Alfa</td>
-            <td class="num" th:text="${@fmt.money(c.lastPrice)}">50,00</td>
-            <td class="num buy" th:text="${@fmt.money(c.bestBid)}">49,50</td>
-            <td class="num sell" th:text="${@fmt.money(c.bestAsk)}">51,00</td>
-            <td><a class="button" th:href="@{/companies/{t}(t=${c.ticker})}">Handluj</a></td>
-        </tr>
-        </tbody>
-    </table>
-    <p class="hint">Inwestora zmienisz w prawym górnym rogu. Każdy inwestor ma własną gotówkę i akcje,
-        więc możesz złożyć zlecenie jako jedna osoba, a potem odpowiedzieć na nie jako druga.</p>
+
+    <div class="page-title">
+        <h1>Rynek</h1>
+        <p class="muted">Kliknij spółkę, żeby zobaczyć arkusz zleceń i złożyć zlecenie.</p>
+    </div>
+
+    <section class="market-cards">
+        <a th:each="c : ${tape}" class="market-card panel" th:href="@{/companies/{t}(t=${c.ticker})}">
+            <div class="mc-head">
+                <div>
+                    <div class="mc-ticker" th:text="${c.ticker}">ALFA</div>
+                    <div class="muted small" th:text="${c.name}">Alfa Energia S.A.</div>
+                </div>
+                <span th:class="'badge ' + ${c.trend()}" th:text="${@fmt.percent(c.changePercent())}">+1,00%</span>
+            </div>
+            <div class="mc-price">
+                <span th:text="${@fmt.money(c.lastPrice)}">50,80</span><small>zł</small>
+                <span th:class="'mc-change ' + ${c.trend()}" th:text="${@fmt.signedMoney(c.change())}">+0,80</span>
+            </div>
+            <th:block th:replace="~{fragments :: sparkline(${c.priceHistory}, ${c.trend()})}"></th:block>
+            <div class="mc-foot">
+                <div><span>Kupno</span><b class="up" th:text="${@fmt.money(c.bestBid)}">50,50</b></div>
+                <div><span>Sprzedaż</span><b class="down" th:text="${@fmt.money(c.bestAsk)}">51,00</b></div>
+                <div><span>Wolumen</span><b th:text="${@fmt.quantity(c.volume)}">160</b></div>
+            </div>
+        </a>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head"><h2>Notowania</h2></div>
+        <table class="grid">
+            <thead>
+            <tr>
+                <th>Spółka</th>
+                <th class="num">Kurs</th>
+                <th class="num">Zmiana</th>
+                <th class="num">Zmiana %</th>
+                <th class="num">Odniesienie</th>
+                <th class="num">Min</th>
+                <th class="num">Max</th>
+                <th class="num">Kupno</th>
+                <th class="num">Sprzedaż</th>
+                <th class="num">Wolumen</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${tape}">
+                <td><b th:text="${c.ticker}">ALFA</b> <span class="muted small" th:text="${c.name}"></span></td>
+                <td class="num strong" th:text="${@fmt.money(c.lastPrice)}"></td>
+                <td th:class="'num ' + ${c.trend()}" th:text="${@fmt.signedMoney(c.change())}"></td>
+                <td class="num"><span th:class="'badge ' + ${c.trend()}" th:text="${@fmt.percent(c.changePercent())}"></span></td>
+                <td class="num muted" th:text="${@fmt.money(c.referencePrice)}"></td>
+                <td class="num" th:text="${@fmt.money(c.low())}"></td>
+                <td class="num" th:text="${@fmt.money(c.high())}"></td>
+                <td class="num up" th:text="${@fmt.money(c.bestBid)}"></td>
+                <td class="num down" th:text="${@fmt.money(c.bestAsk)}"></td>
+                <td class="num" th:text="${@fmt.quantity(c.volume)}"></td>
+                <td class="num"><a class="btn btn-sm" th:href="@{/companies/{t}(t=${c.ticker})}">Handluj</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <p class="muted small hint-line">Inwestora zmieniasz w prawym górnym rogu. Złóż zlecenie jako jedna osoba,
+        a potem odpowiedz na nie jako druga, żeby zobaczyć, jak silnik paruje zlecenia.</p>
 </main>
 </body>
 </html>

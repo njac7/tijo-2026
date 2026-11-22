@@ -1,26 +1,31 @@
 <!DOCTYPE html>
 <html lang="pl" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments :: head('Historia transakcji')}"></head>
+<head th:replace="~{fragments :: head('Transakcje')}"></head>
 <body>
-<header th:replace="~{fragments :: header}"></header>
+<th:block th:replace="~{fragments :: header('trades')}"></th:block>
 <main>
-    <h1>Historia transakcji</h1>
-    <table>
-        <thead><tr><th>Nr</th><th>Czas</th><th>Spółka</th><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Wartość</th><th>Kupujący</th><th>Sprzedający</th></tr></thead>
-        <tbody>
-        <tr th:each="t : ${trades}">
-            <td th:text="${t.id}"></td>
-            <td th:text="${@fmt.time(t.executedAt)}"></td>
-            <td><a th:href="@{/companies/{c}(c=${t.company.ticker})}" th:text="${t.company.ticker}"></a></td>
-            <td class="num" th:text="${@fmt.money(t.price)}"></td>
-            <td class="num" th:text="${t.quantity}"></td>
-            <td class="num" th:text="${@fmt.money(t.value)}"></td>
-            <td th:text="${t.buyOrder.trader.name}"></td>
-            <td th:text="${t.sellOrder.trader.name}"></td>
-        </tr>
-        <tr th:if="${trades.isEmpty()}"><td colspan="8" class="empty">jeszcze nie było transakcji</td></tr>
-        </tbody>
-    </table>
+    <div class="page-title">
+        <h1>Historia transakcji</h1>
+        <p class="muted">Ostatnie 100 transakcji na całym rynku.</p>
+    </div>
+    <section class="panel">
+        <table class="grid">
+            <thead><tr><th>Nr</th><th>Czas</th><th>Spółka</th><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Wartość</th><th>Kupujący</th><th>Sprzedający</th></tr></thead>
+            <tbody>
+            <tr th:each="t : ${trades}">
+                <td class="muted" th:text="${t.id}"></td>
+                <td class="muted" th:text="${@fmt.dateTime(t.executedAt)}"></td>
+                <td><a class="link" th:href="@{/companies/{c}(c=${t.company.ticker})}" th:text="${t.company.ticker}"></a></td>
+                <td class="num strong" th:text="${@fmt.money(t.price)}"></td>
+                <td class="num" th:text="${@fmt.quantity(t.quantity)}"></td>
+                <td class="num" th:text="${@fmt.money(t.value)}"></td>
+                <td><span class="pill pill-buy" th:text="${t.buyOrder.trader.name}"></span></td>
+                <td><span class="pill pill-sell" th:text="${t.sellOrder.trader.name}"></span></td>
+            </tr>
+            <tr th:if="${trades.isEmpty()}"><td colspan="8" class="empty">Jeszcze nie było transakcji.</td></tr>
+            </tbody>
+        </table>
+    </section>
 </main>
 </body>
 </html>

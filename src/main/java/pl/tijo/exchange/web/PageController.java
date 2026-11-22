@@ -21,6 +21,7 @@ import pl.tijo.exchange.service.MarketService;
 import pl.tijo.exchange.service.NotFoundException;
 import pl.tijo.exchange.service.OrderService;
 import pl.tijo.exchange.service.PlaceOrderCommand;
+import pl.tijo.exchange.service.view.CompanySummary;
 
 import java.util.List;
 
@@ -48,9 +49,13 @@ public class PageController {
         return id == null ? null : market.trader(id);
     }
 
+    @ModelAttribute("tape")
+    public List<CompanySummary> tape() {
+        return market.companySummaries();
+    }
+
     @GetMapping("/")
-    public String index(Model model) {
-        model.addAttribute("companies", market.companySummaries());
+    public String index() {
         return "index";
     }
 
@@ -63,9 +68,10 @@ public class PageController {
     }
 
     @GetMapping("/companies/{ticker}")
-    public String company(@PathVariable String ticker, Model model) {
-        model.addAttribute("company", market.company(ticker));
+    public String company(@PathVariable String ticker, HttpSession session, Model model) {
+        model.addAttribute("summary", market.companySummary(ticker));
         model.addAttribute("book", market.orderBook(ticker));
+        model.addAttribute("availableShares", market.availableShares(currentTraderId(session), ticker));
         model.addAttribute("trades", market.recentTrades(ticker));
         if (!model.containsAttribute("orderForm")) {
             OrderForm form = new OrderForm();

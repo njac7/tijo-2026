@@ -2,11 +2,13 @@
 <html lang="pl" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head('Nie znaleziono')}"></head>
 <body>
-<header th:replace="~{fragments :: header}"></header>
+<th:block th:replace="~{fragments :: header('')}"></th:block>
 <main>
-    <h1>Nie znaleziono</h1>
-    <p th:text="${message}"></p>
-    <p><a th:href="@{/}">Wróć do notowań</a></p>
+    <section class="panel not-found">
+        <h1>404</h1>
+        <p th:text="${message}">Nie znaleziono.</p>
+        <a class="btn" th:href="@{/}">Wróć na rynek</a>
+    </section>
 </main>
 </body>
 </html>

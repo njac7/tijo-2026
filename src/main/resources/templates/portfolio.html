@@ -1,78 +1,109 @@
 <!DOCTYPE html>
 <html lang="pl" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments :: head('Mój portfel')}"></head>
+<head th:replace="~{fragments :: head('Portfel')}"></head>
 <body>
-<header th:replace="~{fragments :: header}"></header>
+<th:block th:replace="~{fragments :: header('portfolio')}"></th:block>
 <main th:with="p=${portfolio}">
     <div th:replace="~{fragments :: flash}"></div>
-    <h1>Portfel: <span th:text="${p.trader.name}">Anna</span></h1>
 
-    <div class="stats">
-        <div><span>Gotówka</span><strong th:text="${@fmt.money(p.trader.cash)} + ' zł'"></strong></div>
-        <div><span>Zablokowana</span><strong th:text="${@fmt.money(p.trader.reservedCash)} + ' zł'"></strong></div>
-        <div><span>Wolna</span><strong th:text="${@fmt.money(p.trader.availableCash)} + ' zł'"></strong></div>
-        <div><span>Wartość akcji</span><strong th:text="${@fmt.money(p.sharesValue())} + ' zł'"></strong></div>
-        <div><span>Razem</span><strong th:text="${@fmt.money(p.totalValue())} + ' zł'"></strong></div>
+    <div class="page-title">
+        <h1>Portfel</h1>
+        <p class="muted" th:text="${p.trader.name}">Anna Kowalska</p>
     </div>
 
-    <h2>Akcje</h2>
-    <table>
-        <thead><tr><th>Spółka</th><th class="num">Posiadane</th><th class="num">Zablokowane</th><th class="num">Wolne</th><th class="num">Ostatnia cena</th><th class="num">Wartość</th></tr></thead>
-        <tbody>
-        <tr th:each="h : ${p.holdings}">
-            <td><a th:href="@{/companies/{t}(t=${h.company.ticker})}" th:text="${h.company.ticker}"></a></td>
-            <td class="num" th:text="${h.quantity}"></td>
-            <td class="num" th:text="${h.reservedQuantity}"></td>
-            <td class="num" th:text="${h.availableQuantity}"></td>
-            <td class="num" th:text="${@fmt.money(h.company.lastPrice)}"></td>
-            <td class="num" th:text="${@fmt.money(h.company.lastPrice * h.quantity)}"></td>
-        </tr>
-        <tr th:if="${p.holdings.isEmpty()}"><td colspan="6" class="empty">brak akcji</td></tr>
-        </tbody>
-    </table>
+    <section class="stat-cards">
+        <div class="panel stat highlight">
+            <span>Wartość portfela</span>
+            <strong th:text="${@fmt.money(p.totalValue())} + ' zł'"></strong>
+        </div>
+        <div class="panel stat">
+            <span>Gotówka</span>
+            <strong th:text="${@fmt.money(p.trader.cash)} + ' zł'"></strong>
+        </div>
+        <div class="panel stat">
+            <span>Wolne środki</span>
+            <strong class="up" th:text="${@fmt.money(p.trader.availableCash)} + ' zł'"></strong>
+        </div>
+        <div class="panel stat">
+            <span>Zablokowane w zleceniach</span>
+            <strong class="warn-text" th:text="${@fmt.money(p.trader.reservedCash)} + ' zł'"></strong>
+        </div>
+        <div class="panel stat">
+            <span>Wartość akcji</span>
+            <strong th:text="${@fmt.money(p.sharesValue())} + ' zł'"></strong>
+        </div>
+    </section>
 
-    <h2>Aktywne zlecenia</h2>
-    <table>
-        <thead><tr><th>Nr</th><th>Spółka</th><th>Kierunek</th><th>Typ</th><th class="num">Limit</th><th class="num">Ilość</th><th class="num">Wykonano</th><th>Status</th><th>Złożone</th><th></th></tr></thead>
-        <tbody>
-        <tr th:each="o : ${p.activeOrders()}">
-            <td th:text="${o.id}"></td>
-            <td th:text="${o.company.ticker}"></td>
-            <td th:class="${o.buy} ? 'buy' : 'sell'" th:text="${o.side.label}"></td>
-            <td th:text="${o.type.label}"></td>
-            <td class="num" th:text="${@fmt.money(o.limitPrice)}"></td>
-            <td class="num" th:text="${o.quantity}"></td>
-            <td class="num" th:text="${o.filledQuantity}"></td>
-            <td th:text="${o.status.label}"></td>
-            <td th:text="${@fmt.time(o.createdAt)}"></td>
-            <td>
-                <form method="post" th:action="@{/orders/{id}/cancel(id=${o.id})}">
-                    <button type="submit" class="danger">Anuluj</button>
-                </form>
-            </td>
-        </tr>
-        <tr th:if="${p.activeOrders().isEmpty()}"><td colspan="10" class="empty">brak aktywnych zleceń</td></tr>
-        </tbody>
-    </table>
+    <section class="panel">
+        <div class="panel-head"><h2>Akcje</h2></div>
+        <table class="grid">
+            <thead><tr><th>Spółka</th><th class="num">Posiadane</th><th class="num">Zablokowane</th><th class="num">Wolne</th><th class="num">Kurs</th><th class="num">Zmiana dziś</th><th class="num">Wartość</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="h : ${p.holdings}" th:with="c=${tape.?[ticker == '__${h.company.ticker}__'][0]}">
+                <td><b th:text="${h.company.ticker}"></b> <span class="muted small" th:text="${h.company.name}"></span></td>
+                <td class="num" th:text="${@fmt.quantity(h.quantity)}"></td>
+                <td class="num muted" th:text="${@fmt.quantity(h.reservedQuantity)}"></td>
+                <td class="num" th:text="${@fmt.quantity(h.availableQuantity)}"></td>
+                <td class="num strong" th:text="${@fmt.money(h.company.lastPrice)}"></td>
+                <td class="num"><span th:class="'badge ' + ${c.trend()}" th:text="${@fmt.percent(c.changePercent())}"></span></td>
+                <td class="num" th:text="${@fmt.money(h.company.lastPrice * h.quantity)}"></td>
+                <td class="num"><a class="btn btn-sm" th:href="@{/companies/{t}(t=${h.company.ticker})}">Handluj</a></td>
+            </tr>
+            <tr th:if="${p.holdings.isEmpty()}"><td colspan="8" class="empty">Nie masz jeszcze żadnych akcji.</td></tr>
+            </tbody>
+        </table>
+    </section>
 
-    <h2>Zakończone zlecenia</h2>
-    <table>
-        <thead><tr><th>Nr</th><th>Spółka</th><th>Kierunek</th><th>Typ</th><th class="num">Limit</th><th class="num">Ilość</th><th class="num">Wykonano</th><th>Status</th><th>Złożone</th></tr></thead>
-        <tbody>
-        <tr th:each="o : ${p.closedOrders()}">
-            <td th:text="${o.id}"></td>
-            <td th:text="${o.company.ticker}"></td>
-            <td th:class="${o.buy} ? 'buy' : 'sell'" th:text="${o.side.label}"></td>
-            <td th:text="${o.type.label}"></td>
-            <td class="num" th:text="${@fmt.money(o.limitPrice)}"></td>
-            <td class="num" th:text="${o.quantity}"></td>
-            <td class="num" th:text="${o.filledQuantity}"></td>
-            <td th:text="${o.status.label}"></td>
-            <td th:text="${@fmt.time(o.createdAt)}"></td>
-        </tr>
-        <tr th:if="${p.closedOrders().isEmpty()}"><td colspan="9" class="empty">brak zakończonych zleceń</td></tr>
-        </tbody>
-    </table>
+    <section class="panel">
+        <div class="panel-head"><h2>Aktywne zlecenia</h2></div>
+        <table class="grid">
+            <thead><tr><th>Nr</th><th>Spółka</th><th>Kierunek</th><th>Typ</th><th class="num">Limit</th><th class="num">Ilość</th><th>Wykonanie</th><th>Status</th><th>Złożone</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="o : ${p.activeOrders()}">
+                <td class="muted" th:text="${o.id}"></td>
+                <td><b th:text="${o.company.ticker}"></b></td>
+                <td><span th:class="'pill ' + (${o.buy} ? 'pill-buy' : 'pill-sell')" th:text="${o.side.label}"></span></td>
+                <td th:text="${o.type.label}"></td>
+                <td class="num" th:text="${@fmt.money(o.limitPrice)}"></td>
+                <td class="num" th:text="${@fmt.quantity(o.quantity)}"></td>
+                <td>
+                    <div class="progress"><span th:style="'width:' + ${o.filledQuantity * 100 / o.quantity} + '%'"></span></div>
+                    <span class="muted small" th:text="${o.filledQuantity} + ' / ' + ${o.quantity}"></span>
+                </td>
+                <td><span class="pill pill-status" th:text="${o.status.label}"></span></td>
+                <td class="muted" th:text="${@fmt.dateTime(o.createdAt)}"></td>
+                <td class="num">
+                    <form method="post" th:action="@{/orders/{id}/cancel(id=${o.id})}">
+                        <button type="submit" class="btn btn-sm btn-ghost-danger">Anuluj</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${p.activeOrders().isEmpty()}"><td colspan="10" class="empty">Brak aktywnych zleceń.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head"><h2>Zakończone zlecenia</h2></div>
+        <table class="grid compact">
+            <thead><tr><th>Nr</th><th>Spółka</th><th>Kierunek</th><th>Typ</th><th class="num">Limit</th><th class="num">Ilość</th><th class="num">Wykonano</th><th>Status</th><th>Złożone</th></tr></thead>
+            <tbody>
+            <tr th:each="o : ${p.closedOrders()}">
+                <td class="muted" th:text="${o.id}"></td>
+                <td><b th:text="${o.company.ticker}"></b></td>
+                <td><span th:class="'pill ' + (${o.buy} ? 'pill-buy' : 'pill-sell')" th:text="${o.side.label}"></span></td>
+                <td th:text="${o.type.label}"></td>
+                <td class="num" th:text="${@fmt.money(o.limitPrice)}"></td>
+                <td class="num" th:text="${@fmt.quantity(o.quantity)}"></td>
+                <td class="num" th:text="${@fmt.quantity(o.filledQuantity)}"></td>
+                <td><span th:class="'pill ' + (${o.status.name() == 'FILLED'} ? 'pill-done' : 'pill-cancelled')"
+                          th:text="${o.status.label}"></span></td>
+                <td class="muted" th:text="${@fmt.dateTime(o.createdAt)}"></td>
+            </tr>
+            <tr th:if="${p.closedOrders().isEmpty()}"><td colspan="9" class="empty">Brak zakończonych zleceń.</td></tr>
+            </tbody>
+        </table>
+    </section>
 </main>
 </body>
 </html>

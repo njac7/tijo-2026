@@ -1,110 +1,177 @@
 <!DOCTYPE html>
 <html lang="pl" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments :: head(${company.ticker})}"></head>
+<head th:replace="~{fragments :: head(${summary.ticker})}"></head>
 <body>
-<header th:replace="~{fragments :: header}"></header>
-<main>
+<th:block th:replace="~{fragments :: header('market')}"></th:block>
+<main class="wide" th:with="s=${summary}">
     <div th:replace="~{fragments :: flash}"></div>
-    <h1>
-        <span th:text="${company.ticker}">ALFA</span>
-        <small th:text="${company.name}">Alfa Energia</small>
-    </h1>
-    <p class="price">Ostatnia cena: <strong th:text="${@fmt.money(company.lastPrice)} + ' zł'">50,00 zł</strong>
-        <span th:if="${book.spread() != null}" class="hint"
-              th:text="'(spread ' + ${@fmt.money(book.spread())} + ' zł)'"></span>
-    </p>
 
-    <div class="columns">
-        <section>
-            <h2>Arkusz zleceń</h2>
-            <div class="book">
-                <table>
-                    <caption class="buy">Kupno</caption>
-                    <thead><tr><th class="num">Zleceń</th><th class="num">Ilość</th><th class="num">Cena</th></tr></thead>
+    <section class="quote-header panel">
+        <div class="qh-main">
+            <div class="qh-name">
+                <h1 th:text="${s.ticker}">ALFA</h1>
+                <span class="muted" th:text="${s.name}">Alfa Energia S.A.</span>
+            </div>
+            <div class="qh-price">
+                <span class="qh-last" th:text="${@fmt.money(s.lastPrice)}">50,80</span>
+                <span class="muted">zł</span>
+                <span th:class="'qh-change ' + ${s.trend()}"
+                      th:text="${@fmt.signedMoney(s.change())} + ' (' + ${@fmt.percent(s.changePercent())} + ')'">+0,80 (+1,60%)</span>
+            </div>
+        </div>
+        <dl class="qh-stats">
+            <div><dt>Odniesienie</dt><dd th:text="${@fmt.money(s.referencePrice)}"></dd></div>
+            <div><dt>Min</dt><dd th:text="${@fmt.money(s.low())}"></dd></div>
+            <div><dt>Max</dt><dd th:text="${@fmt.money(s.high())}"></dd></div>
+            <div><dt>Wolumen</dt><dd th:text="${@fmt.quantity(s.volume)}"></dd></div>
+            <div><dt>Kupno</dt><dd class="up" th:text="${@fmt.money(book.bestBid())}"></dd></div>
+            <div><dt>Sprzedaż</dt><dd class="down" th:text="${@fmt.money(book.bestAsk())}"></dd></div>
+            <div><dt>Spread</dt><dd th:text="${@fmt.money(book.spread())}"></dd></div>
+        </dl>
+    </section>
+
+    <div class="trade-layout">
+        <div class="col-main">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Wykres ceny</h2>
+                    <span class="muted small" th:text="${s.priceHistory.size() - 1} + ' transakcji od otwarcia'"></span>
+                </div>
+                <div class="chart">
+                    <div class="chart-scale">
+                        <span th:text="${@fmt.money(s.high())}">51,10</span>
+                        <span th:text="${@fmt.money(s.low())}">49,80</span>
+                    </div>
+                    <svg class="chart-svg" th:classappend="${s.trend()}" viewBox="0 0 640 240"
+                         preserveAspectRatio="none" aria-label="Wykres ceny">
+                        <defs>
+                            <linearGradient id="fill-up" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#26a69a" stop-opacity="0.35"/>
+                                <stop offset="100%" stop-color="#26a69a" stop-opacity="0"/>
+                            </linearGradient>
+                            <linearGradient id="fill-down" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ef5350" stop-opacity="0.35"/>
+                                <stop offset="100%" stop-color="#ef5350" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <g class="chart-grid">
+                            <line x1="0" y1="60" x2="640" y2="60"/>
+                            <line x1="0" y1="120" x2="640" y2="120"/>
+                            <line x1="0" y1="180" x2="640" y2="180"/>
+                        </g>
+                        <polygon class="chart-area" th:with="pts=${@chart.area(s.priceHistory, 640, 240)}" th:points="${pts}"/>
+                        <polyline class="chart-line" th:with="pts=${@chart.line(s.priceHistory, 640, 240)}" th:points="${pts}"/>
+                    </svg>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head"><h2>Ostatnie transakcje</h2></div>
+                <table class="grid compact">
+                    <thead><tr><th>Czas</th><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Wartość</th><th>Kupujący</th><th>Sprzedający</th></tr></thead>
                     <tbody>
-                    <tr th:each="l : ${book.bids}">
-                        <td class="num" th:text="${l.orders}">1</td>
-                        <td class="num" th:text="${l.quantity}">100</td>
-                        <td class="num buy" th:text="${@fmt.money(l.price)}">49,50</td>
+                    <tr th:each="t : ${trades}">
+                        <td class="muted" th:text="${@fmt.time(t.executedAt)}"></td>
+                        <td class="num strong" th:text="${@fmt.money(t.price)}"></td>
+                        <td class="num" th:text="${@fmt.quantity(t.quantity)}"></td>
+                        <td class="num" th:text="${@fmt.money(t.value)}"></td>
+                        <td th:text="${t.buyOrder.trader.name}"></td>
+                        <td th:text="${t.sellOrder.trader.name}"></td>
                     </tr>
-                    <tr th:if="${book.bids.isEmpty()}"><td colspan="3" class="empty">brak zleceń kupna</td></tr>
+                    <tr th:if="${trades.isEmpty()}"><td colspan="6" class="empty">Jeszcze nie było transakcji.</td></tr>
                     </tbody>
                 </table>
-                <table>
-                    <caption class="sell">Sprzedaż</caption>
-                    <thead><tr><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Zleceń</th></tr></thead>
-                    <tbody>
-                    <tr th:each="l : ${book.asks}">
-                        <td class="num sell" th:text="${@fmt.money(l.price)}">51,00</td>
-                        <td class="num" th:text="${l.quantity}">100</td>
-                        <td class="num" th:text="${l.orders}">1</td>
-                    </tr>
-                    <tr th:if="${book.asks.isEmpty()}"><td colspan="3" class="empty">brak zleceń sprzedaży</td></tr>
-                    </tbody>
-                </table>
+            </section>
+        </div>
+
+        <section class="panel col-book">
+            <div class="panel-head">
+                <h2>Arkusz zleceń</h2>
+                <span class="muted small">kliknij cenę, aby ją wybrać</span>
+            </div>
+            <div class="ladder">
+                <div class="ladder-head"><span>Cena</span><span>Ilość</span><span>Zleceń</span></div>
+                <button type="button" th:each="l : ${book.asksDescending()}" class="ladder-row ask"
+                        th:data-price="${l.price}" data-side="BUY"
+                        th:style="'--depth:' + ${book.depthPercent(l)} + '%'">
+                    <span class="down" th:text="${@fmt.money(l.price)}"></span>
+                    <span th:text="${@fmt.quantity(l.quantity)}"></span>
+                    <span class="muted" th:text="${l.orders}"></span>
+                </button>
+                <div th:if="${book.asks.isEmpty()}" class="ladder-empty">brak ofert sprzedaży</div>
+
+                <div class="ladder-mid">
+                    <span th:class="${s.trend()}" th:text="${@fmt.money(s.lastPrice)}">50,80</span>
+                    <span class="muted small" th:if="${book.spread() != null}"
+                          th:text="'spread ' + ${@fmt.money(book.spread())}"></span>
+                </div>
+
+                <button type="button" th:each="l : ${book.bids}" class="ladder-row bid"
+                        th:data-price="${l.price}" data-side="SELL"
+                        th:style="'--depth:' + ${book.depthPercent(l)} + '%'">
+                    <span class="up" th:text="${@fmt.money(l.price)}"></span>
+                    <span th:text="${@fmt.quantity(l.quantity)}"></span>
+                    <span class="muted" th:text="${l.orders}"></span>
+                </button>
+                <div th:if="${book.bids.isEmpty()}" class="ladder-empty">brak ofert kupna</div>
             </div>
         </section>
 
-        <section class="card">
-            <h2>Nowe zlecenie</h2>
-            <form method="post" th:action="@{/orders}" th:object="${orderForm}" id="order-form">
+        <section class="panel col-ticket">
+            <div class="panel-head"><h2>Nowe zlecenie</h2></div>
+            <form method="post" th:action="@{/orders}" th:object="${orderForm}" id="order-form" class="ticket"
+                  th:data-cash="${currentTrader != null ? currentTrader.availableCash : 0}"
+                  th:data-shares="${availableShares}"
+                  th:data-ask="${book.bestAsk()}"
+                  th:data-bid="${book.bestBid()}"
+                  th:data-last="${s.lastPrice}"
+                  th:data-ticker="${s.ticker}">
                 <input type="hidden" th:field="*{ticker}">
-                <fieldset class="radio">
-                    <legend>Kierunek</legend>
-                    <label th:each="s : ${sides}">
-                        <input type="radio" th:field="*{side}" th:value="${s}"> <span th:text="${s.label}"></span>
+
+                <div class="segmented side">
+                    <label class="seg-buy">
+                        <input type="radio" th:field="*{side}" value="BUY"><span>Kupno</span>
                     </label>
-                </fieldset>
-                <fieldset class="radio">
-                    <legend>Typ</legend>
-                    <label th:each="t : ${types}">
-                        <input type="radio" th:field="*{type}" th:value="${t}"> <span th:text="${t.label}"></span>
+                    <label class="seg-sell">
+                        <input type="radio" th:field="*{side}" value="SELL"><span>Sprzedaż</span>
                     </label>
-                </fieldset>
-                <label>Liczba akcji
-                    <input type="number" th:field="*{quantity}" min="1" step="1" required>
+                </div>
+
+                <div class="segmented type">
+                    <label><input type="radio" th:field="*{type}" value="LIMIT"><span>Z limitem</span></label>
+                    <label><input type="radio" th:field="*{type}" value="MARKET"><span>PKC</span></label>
+                </div>
+
+                <label class="field">
+                    <span>Liczba akcji</span>
+                    <input type="number" th:field="*{quantity}" min="1" step="1" placeholder="0" required>
                 </label>
-                <label id="price-field">Limit ceny (zł)
-                    <input type="number" th:field="*{limitPrice}" min="0.01" step="0.01">
+
+                <label class="field" id="price-field">
+                    <span>Limit ceny <small class="muted">(zł)</small></span>
+                    <input type="number" th:field="*{limitPrice}" min="0.01" step="0.01" placeholder="0,00">
                 </label>
-                <button type="submit">Złóż zlecenie</button>
+                <div class="quick-prices" id="quick-prices">
+                    <button type="button" data-quick="bid">Kupno</button>
+                    <button type="button" data-quick="last">Kurs</button>
+                    <button type="button" data-quick="ask">Sprzedaż</button>
+                </div>
+
+                <dl class="ticket-info">
+                    <div id="info-cash"><dt>Wolne środki</dt>
+                        <dd th:text="${currentTrader != null ? @fmt.money(currentTrader.availableCash) : '—'} + ' zł'"></dd></div>
+                    <div id="info-shares"><dt th:text="'Wolne akcje ' + ${s.ticker}"></dt>
+                        <dd th:text="${@fmt.quantity(availableShares)} + ' szt.'"></dd></div>
+                    <div><dt id="value-label">Szacowana wartość</dt><dd id="order-value">—</dd></div>
+                </dl>
+
+                <button type="submit" class="btn btn-block submit-buy" id="submit-btn">Kup</button>
+                <p class="muted small">Kupno z limitem blokuje ilość × limit gotówki, sprzedaż blokuje akcje.
+                    PKC wykonuje się od razu po najlepszych cenach, a reszta jest anulowana.</p>
             </form>
-            <p class="hint">Kupno z limitem blokuje <em>ilość × limit</em> gotówki, sprzedaż blokuje akcje.
-                Zlecenie PKC wykonuje się od razu po najlepszych cenach, a niewykonana reszta jest anulowana.</p>
         </section>
     </div>
-
-    <section>
-        <h2>Ostatnie transakcje</h2>
-        <table>
-            <thead><tr><th>Czas</th><th class="num">Cena</th><th class="num">Ilość</th><th class="num">Wartość</th><th>Kupujący</th><th>Sprzedający</th></tr></thead>
-            <tbody>
-            <tr th:each="t : ${trades}">
-                <td th:text="${@fmt.time(t.executedAt)}"></td>
-                <td class="num" th:text="${@fmt.money(t.price)}"></td>
-                <td class="num" th:text="${t.quantity}"></td>
-                <td class="num" th:text="${@fmt.money(t.value)}"></td>
-                <td th:text="${t.buyOrder.trader.name}"></td>
-                <td th:text="${t.sellOrder.trader.name}"></td>
-            </tr>
-            <tr th:if="${trades.isEmpty()}"><td colspan="6" class="empty">jeszcze nie było transakcji</td></tr>
-            </tbody>
-        </table>
-    </section>
 </main>
-<script>
-    (function () {
-        const form = document.getElementById('order-form');
-        const priceField = document.getElementById('price-field');
-        const priceInput = priceField.querySelector('input');
-        function update() {
-            const market = form.querySelector('input[name="type"]:checked').value === 'MARKET';
-            priceField.hidden = market;
-            priceInput.required = !market;
-        }
-        form.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener('change', update));
-        update();
-    })();
-</script>
+<script th:src="@{/ticket.js}"></script>
 </body>
 </html>
